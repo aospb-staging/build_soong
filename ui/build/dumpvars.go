@@ -180,11 +180,15 @@ func Banner(make_vars map[string]string) string {
 	b := &bytes.Buffer{}
 
 	fmt.Fprintln(b, "============================================")
+	fmt.Fprintln(b, "         Welcome to aosPB - Project         ")
+	fmt.Fprintln(b, "============================================")
+	fmt.Fprintln(b, "\n")
 	for _, name := range BannerVars {
 		if make_vars[name] != "" {
 			fmt.Fprintf(b, "%s=%s\n", name, make_vars[name])
 		}
 	}
+	fmt.Fprintln(b, "\n")
 	fmt.Fprint(b, "============================================")
 
 	return b.String()
