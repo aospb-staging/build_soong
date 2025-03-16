@@ -164,7 +164,6 @@ type prebuiltModuleProperties struct {
 	Ramdisk             *bool
 
 	Srcs []string
-	Dsts []string
 
 	No_full_install *bool
 
@@ -301,6 +300,7 @@ func createPrebuiltEtcModulesInDirectory(ctx android.LoadHookContext, partition,
 			etcInstallPathKey = etcInstallPath
 		}
 	}
+	moduleFactory := etcInstallPathToFactoryList[etcInstallPathKey]
 	relDestDirFromInstallDirBase, _ := filepath.Rel(etcInstallPathKey, destDir)
 
 	for fileIndex := range maxLen {
@@ -350,15 +350,23 @@ func createPrebuiltEtcModulesInDirectory(ctx android.LoadHookContext, partition,
 				})
 			}
 		} else {
-			modulePropsPtr.Srcs = srcBaseFiles
-			dsts := []string{}
-			for _, installBaseFile := range installBaseFiles {
-				dsts = append(dsts, filepath.Join(relDestDirFromInstallDirBase, installBaseFile))
+			// If dsts property has to be set and the selected module type is prebuilt_root,
+			// use prebuilt_any instead.
+			if etcInstallPathKey == "" {
+				moduleFactory = etc.PrebuiltAnyFactory
 			}
-			modulePropsPtr.Dsts = dsts
+			modulePropsPtr.Srcs = srcBaseFiles
+			dsts := proptools.NewConfigurable[[]string](nil, nil)
+			for _, installBaseFile := range installBaseFiles {
+				dsts.AppendSimpleValue([]string{filepath.Join(relDestDirFromInstallDirBase, installBaseFile)})
+			}
+
+			propsList = append(propsList, &etc.PrebuiltDstsProperties{
+				Dsts: dsts,
+			})
 		}
 
-		ctx.CreateModuleInDirectory(etcInstallPathToFactoryList[etcInstallPathKey], srcDir, propsList...)
+		ctx.CreateModuleInDirectory(moduleFactory, srcDir, propsList...)
 		moduleNames = append(moduleNames, moduleName)
 	}
 
